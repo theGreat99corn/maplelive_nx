@@ -2,28 +2,28 @@
 
 <div align="center">
 
-<img src="extras/banner.png" alt="Jetpack Joyride banner" width="35%">
+<img src="extras/banner.png" alt="Maplestory LIVE banner" width="35%">
 
 </div>
-<h1 align="center">Jetpack Joyride - Nintendo Switch port</h1>
+<h1 align="center">Maplestory LIVE - Nintendo Switch port</h1>
 
-This is a wrapper/port of the Android ARM64 version of Jetpack Joyride (`1.104.1`). <br/>
+This is a wrapper/port of the Android ARM64 version of Maplestory LIVE (`1.4.4` with Userpatch). <br/>
 It loads the original game's ARM64 library and runs it as-is inside a minimal Android compatibility environment.
 
-Current port version: **1.0.1**.
+Current port version: **1.0.0**.
 
 ### How to install
 
-You will need a legally obtained copy of Jetpack Joyride `1.104.1`.
+You will need a legally obtained copy of Maplestory LIVE `1.4.4`.
 
-Create `/switch/jetpackjoyride_nx/` on your SD card, copy `jetpackjoyride_nx.nro` there, then extract the complete contents of the APK into the directory.
+Create `/switch/maplelive/` on your SD card, copy maplelive_nx.nro` there, then extract the complete contents of the APK into the directory.
 
 ```text
-/switch/jetpackjoyride_nx/
-  jetpackjoyride_nx.nro
+/switch/maplelive_nx/
+  maplelive_nx.nro
   lib/
     arm64-v8a/
-      libmortargame.so
+      libMapleLive.so
   assets/
     assets.zip
 ```
@@ -81,5 +81,5 @@ If you enjoy my work and want to support me:
 
 ### Legal
 
-This project is not affiliated with Halfbrick Studios. Jetpack Joyride and all related assets are trademarks or property of their respective owners. All rights reserved.
-No assets or program code from Jetpack Joyride are included in this repository. We do not condone piracy and encourage users to legally obtain the original game.
+This project is not affiliated with Nexon nor Wizet. Maplestory LIVE and all related assets are trademarks or property of their respective owners. All rights reserved.
+No assets or program code from Maplestory LIVE are included in this repository. We do not condone piracy and encourage users to legally obtain the original game.
