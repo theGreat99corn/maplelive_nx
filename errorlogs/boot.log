@@ -1,0 +1,5 @@
+[boot] main() entered!
+
+[fatal_error] error: could not find symbol:
+
+_Z7initAppP7_JNIEnv
