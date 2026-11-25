@@ -1,0 +1,42 @@
+/* config.h -- FF4 3D Switch wrapper configuration
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license. See the LICENSE file for details.
+ */
+
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+#define MEMORY_MB 512
+
+// Final Fantasy IV 3D (Android) ships the real engine as libMapleLive.so. The
+// Android libff4proxy.so only loads this library and forwards JNI entry points,
+// so the Switch wrapper talks to libMapleLive.so directly.
+#define SO_NAME "libMapleLive.so"
+#define OBB_NAME "assets/assets.zip"
+#define CONFIG_NAME "config.txt"
+#define LOG_NAME "debug.log"
+
+#define DEBUG_LOG 0
+
+extern int screen_width;
+extern int screen_height;
+
+// MainActivity's language order:
+//   0 ru  1 th  2 ja  3 en  4 fr  5 de  6 it  7 es  8 zh_CN  9 zh_TW  10 ko  11 pt
+#define LANG_EN 3
+#define LANG_KO 10
+
+typedef struct {
+  int screen_width;
+  int screen_height;
+  int widescreen;
+  int language;
+} Config;
+
+extern Config config;
+
+int read_config(const char *file);
+int write_config(const char *file);
+
+#endif
