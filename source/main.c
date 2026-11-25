@@ -130,7 +130,7 @@ static int egl_init(void) {
   s_surface = eglCreateWindowSurface(s_display, config, win, NULL);
   if (!s_surface) { debugPrintf("egl: no surface\n"); return 0; }
 
-  const EGLint ctx_attr[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_NONE };
+  const EGLint ctx_attr[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
   s_context = eglCreateContext(s_display, config, EGL_NO_CONTEXT, ctx_attr);
   if (!s_context) { debugPrintf("egl: no context\n"); return 0; }
 
@@ -164,7 +164,27 @@ static void (*e_pause)(void *env, void *thiz);
 // battle-UI singleton pointer (NULL outside battle); drives the flee flag
 static void **e_b2d_instance;
 
+extern void maplelive_bind_symbols(void);
+extern void maplelive_start_lifecycle(void *env, void *thiz, void *dev_info, void *start_args);
+extern void maplelive_step_frame(void *env, void *thiz);
+extern void maplelive_key_event(void *env, void *thiz, int keycode);
+extern void maplelive_touch_event(void *env, void *thiz, int x, int y, int id);
+
+static void *ml_make_string_array(void *env, const char **items, int count) {
+  void **env_tbl = *(void ***)env;
+  void *(*new_obj_arr)(void *, int32_t, void *, void *) = env_tbl[172];
+  void (*set_obj_arr)(void *, void *, int32_t, void *) = env_tbl[174];
+  void *(*new_str_utf)(void *, const char *) = env_tbl[167];
+  void *arr = new_obj_arr(env, count, (void *)0x1001, NULL);
+  for (int i = 0; i < count; ++i) {
+    set_obj_arr(env, arr, i, new_str_utf(env, items[i]));
+  }
+  return arr;
+}
+
 static void resolve_entry_points(void) {
+  maplelive_bind_symbols();
+  return;
   e_initApp    = (void *)so_find_addr_rx(&game_mod, "_Z7initAppP7_JNIEnv");
   e_resumeFont = (void *)so_try_find_addr_rx(&game_mod, "resumeFont");
   e_releaseApp = (void *)so_try_find_addr_rx(&game_mod, "releaseApp");
@@ -321,8 +341,7 @@ int main(void) {
   // load_base) is still accessible -- so_finalize maps the code via
   // svcMapProcessCodeMemory, which locks load_base out
   resolve_entry_points();
-  if (!e_render || !e_resume || !e_touch || !e_initApp)
-    fatal_error("Could not resolve FF4 engine entry points.");
+  /* MapleLive entry points resolved via maplelive_bind_symbols() */
 
   so_finalize(&game_mod);
   so_flush_caches(&game_mod);
@@ -336,59 +355,45 @@ int main(void) {
   jni_init();
   thiz = jni_make_thiz();
 
-  e_initApp(fake_env);
+  const char *dev_info[6] = {
+    "sdmc:/switch/maplelive_nx/",
+    "sdmc:/switch/maplelive_nx/save/",
+    "Nintendo Switch",
+    "13",
+    "45005",
+    "kr"
+  };
+  const char *start_args[1] = { "sdmc:/switch/maplelive_nx/" };
+  void *j_dev_info = ml_make_string_array(fake_env, dev_info, 6);
+  void *j_start_args = ml_make_string_array(fake_env, start_args, 1);
 
-  if (obb_open(OBB_NAME) < 0)
-    fatal_error("Could not open\n%s.\nCheck your data files.", OBB_NAME);
-
-  jni_compute_viewport();
-
-  e_resume(fake_env, thiz);
-
-  if (e_resumeFont) {
-    e_resumeFont(fake_env, thiz);
-  }
+  maplelive_start_lifecycle(fake_env, thiz, j_dev_info, j_start_args);
 
   padConfigureInput(8, HidNpadStyleSet_NpadStandard);
   padInitializeAny(&pad);
   hidInitializeTouchScreen();
 
-  int frame = 0;
-  int boot_frames = 0;
-  int last_interval = 1;
   while (appletMainLoop() && !jni_quit_requested) {
-    update_keys();
-    update_flee();
-    update_touch();
+    padUpdate(&pad);
+    u64 kDown = padGetButtonsDown(&pad);
+    if (kDown & HidNpadButton_Up)    maplelive_key_event(fake_env, thiz, 19);
+    if (kDown & HidNpadButton_Down)  maplelive_key_event(fake_env, thiz, 20);
+    if (kDown & HidNpadButton_Left)  maplelive_key_event(fake_env, thiz, 21);
+    if (kDown & HidNpadButton_Right) maplelive_key_event(fake_env, thiz, 22);
+    if (kDown & HidNpadButton_A)     maplelive_key_event(fake_env, thiz, 23);
+    if (kDown & HidNpadButton_B)     maplelive_key_event(fake_env, thiz, 4);
+    if (kDown & HidNpadButton_Plus)  maplelive_key_event(fake_env, thiz, 82);
 
-    const int target = jni_get_target_fps();
-    int interval = 60 / (target > 0 ? target : 60);
-    if (interval < 1) interval = 1;
-    if (interval != last_interval) {
-      eglSwapInterval(s_display, interval);
-      last_interval = interval;
+    HidTouchScreenState tst = {0};
+    if (hidGetTouchScreenStates(&tst, 1) > 0 && tst.count > 0) {
+      for (int i = 0; i < tst.count; ++i) {
+        maplelive_touch_event(fake_env, thiz, (int)tst.touches[i].x, (int)tst.touches[i].y, (int)tst.touches[i].finger_id);
+      }
     }
 
-    e_render(fake_env, thiz, frame);
-    movie_swap_buffers(s_display, s_surface);
-    movie_main_loop_tick();
-
-    frame++;
-
-    if (boot_frames < 10 && ++boot_frames == 10)
-      cpu_boost(0);
+    maplelive_step_frame(fake_env, thiz);
+    eglSwapBuffers(s_display, s_surface);
   }
-
-  if (e_pause) e_pause(fake_env, thiz);
-  if (e_releaseApp) e_releaseApp(fake_env, thiz);
-
-  opensles_shutdown();
-  egl_deinit();
-  obb_close();
-  plExit();
-
-  extern void NX_NORETURN __libnx_exit(int rc);
-  __libnx_exit(0);
   return 0;
-}
 
+}
