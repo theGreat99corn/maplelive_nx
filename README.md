@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="extras/banner.png" alt="Maplestory LIVE banner" width="35%">
+<img src="extras/banner.jpg" alt="Maplestory LIVE banner" width="35%">
 
 </div>
 <h1 align="center">Maplestory LIVE - Nintendo Switch port</h1>
